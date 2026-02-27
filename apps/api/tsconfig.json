@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "types": ["@cloudflare/workers-types"],
+    "paths": {
+      "@naufarrel/shared": ["../../packages/shared/types.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"]
+}

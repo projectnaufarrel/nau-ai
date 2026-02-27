@@ -1,0 +1,6 @@
+{
+  "name": "@naufarrel/shared",
+  "version": "0.0.1",
+  "main": "./types.ts",
+  "types": "./types.ts"
+}

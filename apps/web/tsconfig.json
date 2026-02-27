@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "paths": {
+      "@naufarrel/shared": ["../../packages/shared/types.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "app.config.ts"]
+}

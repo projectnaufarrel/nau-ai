@@ -1,0 +1,22 @@
+{
+  "name": "@naufarrel/api",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "hono": "^4.0.0",
+    "ai": "^4.0.0",
+    "@ai-sdk/google": "^1.0.0",
+    "@supabase/supabase-js": "^2.0.0"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0",
+    "typescript": "^5.0.0",
+    "@cloudflare/workers-types": "^4.0.0",
+    "@naufarrel/shared": "*"
+  }
+}
