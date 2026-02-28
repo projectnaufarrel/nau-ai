@@ -1,5 +1,5 @@
 import { generateText } from 'ai'
-import { google } from '@ai-sdk/google'
+import { createMoonshotAI } from '@ai-sdk/moonshotai'
 import type { ChatResponse, Source } from '@naufarrel/shared'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { searchSections } from '../../db/queries'
@@ -28,8 +28,9 @@ export async function handleKnowledge(
   const prompt = buildKnowledgePrompt(sources, userText, history)
 
   // 3. Call LLM via AI SDK (model agnostic — swap provider by changing this line)
+  const moonshot = createMoonshotAI({ apiKey })
   const { text: rawAnswer } = await generateText({
-    model: google('gemini-1.5-flash', { apiKey }),
+    model: moonshot('kimi-k2.5'),
     prompt
   })
 

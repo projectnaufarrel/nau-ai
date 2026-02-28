@@ -9,12 +9,12 @@
   },
   "dependencies": {
     "hono": "^4.0.0",
-    "ai": "^4.0.0",
-    "@ai-sdk/google": "^1.0.0",
+    "ai": "^6.0.0",
+    "@ai-sdk/moonshotai": "^2.0.5",
     "@supabase/supabase-js": "^2.0.0"
   },
   "devDependencies": {
-    "wrangler": "^3.0.0",
+    "wrangler": "^4.0.0",
     "typescript": "^5.0.0",
     "@cloudflare/workers-types": "^4.0.0",
     "@naufarrel/shared": "*"

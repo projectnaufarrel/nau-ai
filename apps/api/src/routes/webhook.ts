@@ -3,7 +3,7 @@ import type { Env } from '../index'
 import { lineAdapter } from '../platforms/line'
 import { verifyLineSignature } from '../lib/line-verify'
 import { getSupabase } from '../lib/supabase'
-import { routeMessage } from '../ai/router'
+import { runAgent } from '../ai/agent'
 
 export const webhookRouter = new Hono<{ Bindings: Env }>()
 
@@ -41,9 +41,13 @@ webhookRouter.post('/line', async (c) => {
       return c.json({ ok: true })
     }
 
-    // 5. Route through AI orchestrator
+    // 5. Run the agent (LLM decides what tools to use)
     const supabase = getSupabase(c.env)
-    const response = await routeMessage(message.text, supabase, c.env.GOOGLE_GENERATIVE_AI_API_KEY)
+    const response = await runAgent({
+      userText: message.text,
+      supabase,
+      apiKey: c.env.MOONSHOT_API_KEY
+    })
 
     // 6. Format for Line (source list appended as text)
     const formatted = lineAdapter.formatResponse(response) as { type: string; text: string }
@@ -60,7 +64,6 @@ webhookRouter.post('/line', async (c) => {
 })
 
 // Helper: send reply to Line Messaging API and log failures.
-// Reply tokens expire ~30s after the webhook event — don't await this if speed is critical.
 async function replyToLine(
   accessToken: string,
   replyToken: string,

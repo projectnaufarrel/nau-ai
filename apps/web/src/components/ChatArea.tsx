@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import type { ChatResponse, Source } from '@naufarrel/shared'
+import type { ChatResponse } from '@naufarrel/shared'
 import { sendMessage } from '../lib/api'
 import { MessageBubble } from './MessageBubble'
 
@@ -11,14 +11,11 @@ interface Message {
 }
 
 interface ChatAreaProps {
-  // Called when user clicks a citation chip. Receives that message's sources + chip index.
-  onCitationClick: (sources: Source[], index: number) => void
-  activeCitation: number | null
   conversationId: string
   userId: string
 }
 
-export function ChatArea({ onCitationClick, activeCitation, conversationId, userId }: ChatAreaProps) {
+export function ChatArea({ conversationId, userId }: ChatAreaProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -46,7 +43,6 @@ export function ChatArea({ onCitationClick, activeCitation, conversationId, user
         chatResponse: response
       }
       setMessages(prev => [...prev, assistantMsg])
-      // No longer pushing to parent — each MessageBubble carries its own sources.
     } catch {
       setMessages(prev => [...prev, {
         id: (Date.now() + 1).toString(),
@@ -75,14 +71,12 @@ export function ChatArea({ onCitationClick, activeCitation, conversationId, user
             role={msg.role}
             content={msg.content}
             chatResponse={msg.chatResponse}
-            activeCitation={activeCitation}
-            onCitationClick={onCitationClick}
           />
         ))}
         {loading && (
           <div className="flex justify-start mb-3">
             <div className="bg-gray-100 rounded-2xl px-4 py-2 text-gray-500 text-sm animate-pulse">
-              Sedang mencari...
+              Sedang berpikir...
             </div>
           </div>
         )}

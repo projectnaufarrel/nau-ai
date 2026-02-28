@@ -21,11 +21,11 @@ function isGreeting(text: string): boolean {
 export async function routeMessage(
   userText: string,
   supabase: SupabaseClient,
-  googleApiKey: string,
+  aiApiKey: string,
   history: Array<{ role: 'user' | 'assistant'; content: string }> = []
 ): Promise<ChatResponse> {
   if (isGreeting(userText)) {
-    return handleGreeting(userText, googleApiKey)
+    return handleGreeting(userText, aiApiKey)
   }
-  return handleKnowledge(userText, supabase, googleApiKey, history)
+  return handleKnowledge(userText, supabase, aiApiKey, history)
 }

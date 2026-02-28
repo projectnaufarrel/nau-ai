@@ -1,11 +1,9 @@
 import { Hono } from 'hono'
 import type { Env } from '../index'
 import { getSupabase } from '../lib/supabase'
-import { routeMessage } from '../ai/router'
+import { runAgent } from '../ai/agent'
 import { getOrCreateConversation } from '../db/queries'
-import { webAdapter } from '../platforms/web'
 import type { ChatRequest } from '@naufarrel/shared'
-import type { ConversationMessage } from '../db/schema'
 
 // Maximum messages stored per conversation — prevents unbounded JSONB growth
 const MAX_CONVERSATION_MESSAGES = 50
@@ -20,42 +18,41 @@ chatRouter.post('/', async (c) => {
       return c.json({ error: 'message is required' }, 400)
     }
 
-    // Guard against oversized messages — prevents LLM token abuse
     if (body.message.length > 2000) {
       return c.json({ error: 'message too long (max 2000 characters)' }, 400)
     }
 
     const supabase = getSupabase(c.env)
 
-    // Use webAdapter to extract userId — keeps platform pattern consistent
-    const platformMsg = webAdapter.parseIncoming(body)
-    const userId = platformMsg.userId
-
     // Load or create conversation for history context
-    const conversation = await getOrCreateConversation(supabase, userId, 'web')
-    const history = (conversation.messages ?? []).map(m => ({ role: m.role, content: m.content }))
+    const conversation = await getOrCreateConversation(supabase, body.userId || 'anon', 'web')
+    const history = (conversation.messages ?? []).map((m: { role: 'user' | 'assistant'; content: string }) => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content
+    }))
 
-    // Get AI response (with conversation history for follow-up context)
-    const response = await routeMessage(body.message, supabase, c.env.GOOGLE_GENERATIVE_AI_API_KEY, history)
+    // Run the agent (LLM decides what tools to use)
+    const response = await runAgent({
+      userText: body.message,
+      supabase,
+      apiKey: c.env.MOONSHOT_API_KEY,
+      history
+    })
 
-    // Build both new messages
-    const userMsg: ConversationMessage = {
-      role: 'user',
+    // Save conversation history
+    const userMsg = {
+      role: 'user' as const,
       content: body.message,
       timestamp: new Date().toISOString()
     }
-    const assistantMsg: ConversationMessage = {
-      role: 'assistant',
+    const assistantMsg = {
+      role: 'assistant' as const,
       content: response.answer,
-      timestamp: new Date().toISOString(),
-      sources: response.sources.map(s => s.sectionId)
+      timestamp: new Date().toISOString()
     }
 
-    // Single atomic update: append both messages at once, enforce max history length.
-    // Using one update (not two sequential calls) eliminates the race condition.
     let updatedMessages = [...(conversation.messages ?? []), userMsg, assistantMsg]
     if (updatedMessages.length > MAX_CONVERSATION_MESSAGES) {
-      // Trim oldest messages — always trim in pairs to keep user+assistant together
       updatedMessages = updatedMessages.slice(-MAX_CONVERSATION_MESSAGES)
     }
 
@@ -66,12 +63,11 @@ chatRouter.post('/', async (c) => {
 
     return c.json(response)
   } catch (err) {
-    console.error('Chat error:', err)
+    const errorMessage = err instanceof Error ? err.message : String(err)
+    console.error('Chat error:', errorMessage)
     return c.json({
       answer: 'Maaf, terjadi kesalahan internal. Silakan coba lagi.',
-      citations: [],
-      sources: [],
-      hasCitations: false
+      sources: []
     }, 500)
   }
 })

@@ -34,8 +34,8 @@ export const lineAdapter: PlatformAdapter = {
 
     if (response.sources.length > 0) {
       text += '\n\n📄 Sumber:'
-      response.sources.forEach((src, i) => {
-        text += `\n[${i + 1}] ${src.documentTitle} — ${src.sectionTitle}`
+      response.sources.forEach((src) => {
+        text += `\n[${src.index}] ${src.documentTitle} — ${src.sectionTitle}`
       })
     }
 

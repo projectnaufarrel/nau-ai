@@ -1,14 +1,23 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Source } from '@naufarrel/shared'
 import type { Conversation } from './schema'
 
+// Search result shape returned by the RPC
+export interface SearchResult {
+  sectionId: string
+  documentTitle: string
+  sectionTitle: string
+  docType: string
+  content: string
+  relevanceScore: number
+}
+
 // Search document sections via full-text search
-// Returns sections with parent document metadata — feeds directly into citations
+// Returns sections with parent document metadata
 export async function searchSections(
   supabase: SupabaseClient,
   query: string,
   limit = 5
-): Promise<Source[]> {
+): Promise<SearchResult[]> {
   const { data, error } = await supabase.rpc('search_sections', {
     query_text: query,
     result_limit: limit
@@ -62,3 +71,40 @@ export async function getOrCreateConversation(
   return created as Conversation
 }
 
+// Fetch a full document with all its sections
+export async function getDocumentById(
+  supabase: SupabaseClient,
+  documentId: string
+): Promise<{
+  title: string
+  docType: string
+  sections: Array<{ sectionTitle: string; content: string; sectionOrder: number }>
+} | null> {
+  // Fetch the document
+  const { data: doc, error: docError } = await supabase
+    .from('documents')
+    .select('title, doc_type')
+    .eq('id', documentId)
+    .single()
+
+  if (docError || !doc) return null
+
+  // Fetch all sections
+  const { data: sections, error: secError } = await supabase
+    .from('document_sections')
+    .select('section_title, content, section_order')
+    .eq('document_id', documentId)
+    .order('section_order', { ascending: true })
+
+  if (secError) return null
+
+  return {
+    title: doc.title,
+    docType: doc.doc_type,
+    sections: (sections ?? []).map(s => ({
+      sectionTitle: s.section_title ?? '',
+      content: s.content,
+      sectionOrder: s.section_order
+    }))
+  }
+}

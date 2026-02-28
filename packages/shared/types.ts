@@ -1,33 +1,28 @@
-// Contract between API and Web frontend — never break this shape
+// Shared types between API and frontend
+// This is the contract — any change here affects both sides
 
-export interface Citation {
-  sourceIndex: number;   // index into sources[]
-  startOffset: number;   // char position in answer where citation marker starts
-  endOffset: number;     // char position where citation marker ends
-  marker: string;        // display text e.g. "[1]"
-}
-
-export interface Source {
-  sectionId: string;
-  documentTitle: string;
-  sectionTitle: string;
-  docType: string;
-  content: string;
-  relevanceScore?: number;
+export interface ChatRequest {
+  message: string
+  userId: string
+  conversationId: string
 }
 
 export interface ChatResponse {
-  answer: string;
-  citations: Citation[];
-  sources: Source[];
-  hasCitations: boolean; // false = fallback mode, show sources list below answer
+  answer: string
+  sources: Source[]
 }
 
-export interface ChatRequest {
-  message: string;
-  conversationId?: string;
-  userId?: string;
+export interface Source {
+  index: number
+  documentTitle: string
+  sectionTitle: string
+  excerpt: string
 }
-// PlatformMessage and PlatformAdapter are API-internal types.
-// They live in apps/api/src/platforms/types.ts, not here.
-// This file only exports the API<->Frontend contract types.
+
+// Conversation message stored in Supabase JSONB
+export interface ConversationMessage {
+  role: 'user' | 'assistant'
+  content: string
+  timestamp: string
+  sources?: Source[]
+}

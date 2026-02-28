@@ -1,17 +1,15 @@
+import { useState } from 'react'
 import type { ChatResponse, Source } from '@naufarrel/shared'
-import { CitationMarker } from './CitationMarker'
 
 interface MessageBubbleProps {
   role: 'user' | 'assistant'
   content: string
-  chatResponse?: ChatResponse  // only for assistant messages
-  activeCitation: number | null
-  // Receives sources from this message + the citation index clicked.
-  // This ensures sidebar always shows sources for the message the user clicked, not the latest.
-  onCitationClick: (sources: Source[], index: number) => void
+  chatResponse?: ChatResponse
 }
 
-export function MessageBubble({ role, content, chatResponse, activeCitation, onCitationClick }: MessageBubbleProps) {
+export function MessageBubble({ role, content, chatResponse }: MessageBubbleProps) {
+  const [sourcesExpanded, setSourcesExpanded] = useState(false)
+
   if (role === 'user') {
     return (
       <div className="flex justify-end mb-3">
@@ -22,13 +20,8 @@ export function MessageBubble({ role, content, chatResponse, activeCitation, onC
     )
   }
 
-  // Render assistant message with inline citation chips
-  const renderWithCitations = () => {
-    if (!chatResponse?.hasCitations || !chatResponse.citations.length) {
-      return <p className="whitespace-pre-wrap">{content}</p>
-    }
-
-    // Split answer text by citation markers [1], [2], etc.
+  // Parse [N] markers in the answer text and render as styled chips
+  const renderContent = () => {
     const parts: React.ReactNode[] = []
     let lastIndex = 0
     const markerRegex = /\[(\d+)\]/g
@@ -41,12 +34,14 @@ export function MessageBubble({ role, content, chatResponse, activeCitation, onC
       }
       const num = parseInt(match[1], 10)
       parts.push(
-        <CitationMarker
+        <button
           key={match.index}
-          number={num}
-          onClick={(num) => onCitationClick(chatResponse?.sources ?? [], num)}
-          active={activeCitation === num - 1}
-        />
+          onClick={() => setSourcesExpanded(true)}
+          className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-blue-700 bg-blue-100 rounded-full cursor-pointer hover:bg-blue-200 transition-colors mx-0.5 align-text-top"
+          title={`Sumber ${num}`}
+        >
+          {num}
+        </button>
       )
       lastIndex = match.index + match[0].length
     }
@@ -57,19 +52,51 @@ export function MessageBubble({ role, content, chatResponse, activeCitation, onC
     return <p className="whitespace-pre-wrap leading-relaxed">{parts}</p>
   }
 
+  const sources = chatResponse?.sources ?? []
+
   return (
     <div className="flex justify-start mb-3">
       <div className="bg-gray-100 rounded-2xl rounded-bl-sm px-4 py-2 max-w-xs lg:max-w-md">
-        {renderWithCitations()}
-        {/* Fallback: show sources list below answer if hasCitations=false */}
-        {chatResponse && !chatResponse.hasCitations && chatResponse.sources.length > 0 && (
-          <div className="mt-2 pt-2 border-t border-gray-200 text-sm text-gray-600">
-            <p className="font-semibold mb-1">Sumber:</p>
-            {chatResponse.sources.map((src, i) => (
-              <p key={src.sectionId} className="text-xs">
-                [{i + 1}] {src.documentTitle} — {src.sectionTitle}
-              </p>
-            ))}
+        {renderContent()}
+
+        {/* Sources section */}
+        {sources.length > 0 && (
+          <div className="mt-2 pt-2 border-t border-gray-200">
+            <button
+              onClick={() => setSourcesExpanded(!sourcesExpanded)}
+              className="text-xs text-blue-600 font-medium hover:text-blue-700 flex items-center gap-1"
+            >
+              📄 {sources.length} Sumber
+              <span className="text-[10px]">{sourcesExpanded ? '▲' : '▼'}</span>
+            </button>
+
+            {sourcesExpanded && (
+              <div className="mt-2 space-y-2">
+                {sources.map((src) => (
+                  <div
+                    key={`${src.documentTitle}-${src.sectionTitle}`}
+                    className="bg-white rounded-lg p-2 border border-gray-200"
+                  >
+                    <div className="flex items-start gap-1.5">
+                      <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-blue-700 bg-blue-100 rounded-full flex-shrink-0 mt-0.5">
+                        {src.index}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-gray-800 leading-tight">
+                          {src.documentTitle}
+                        </p>
+                        <p className="text-[11px] text-gray-500">
+                          {src.sectionTitle}
+                        </p>
+                        <p className="text-[11px] text-gray-600 mt-1 italic leading-snug line-clamp-3">
+                          "{src.excerpt}"
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
